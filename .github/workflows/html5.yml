@@ -20,8 +20,10 @@ jobs:
         run: |
           mkdir -p ~/haxelib
           haxelib setup ~/haxelib
-          haxelib git haxelib https://github.com
-          haxelib git hmm https://github.com
+          U="https://github"
+          P=".com/FunkinCrew"
+          haxelib git haxelib "${U}${P}/haxelib.git"
+          haxelib git hmm "${U}${P}/hmm.git"
           haxelib run hmm install
 
       - name: Build HTML5
