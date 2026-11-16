@@ -4,7 +4,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository and assets
         uses: actions/checkout@v4
@@ -18,10 +18,11 @@ jobs:
 
       - name: Install dependencies
         run: |
-          haxelib --global git haxelib https://github.com
-          haxelib --global git hmm https://github.com
-          haxelib --global run hmm setup
-          hmm install
+          mkdir -p ~/haxelib
+          haxelib setup ~/haxelib
+          haxelib git haxelib https://github.com
+          haxelib git hmm https://github.com
+          haxelib run hmm install
 
       - name: Build HTML5
         run: haxelib run lime build html5 -DGITHUB_BUILD
