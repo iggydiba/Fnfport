@@ -10,13 +10,22 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 1
 
       - name: Setup Haxe
         uses: krdlab/setup-haxe@v2
         with:
           haxe-version: 4.3.6
 
-      - name: Install dependencies
+      - name: Cache Haxelib dependencies
+        id: cache-haxelib
+        uses: actions/cache@v4
+        with:
+          path: .haxelib
+          key: haxelib-${{ hashFiles('hmm.json') }}-v3
+
+      - name: Install dependencies and prebuilt Lime binary
+        if: steps.cache-haxelib.outputs.cache-hit != 'true'
         run: |
           mkdir -p ~/haxelib
           haxelib setup ~/haxelib
@@ -25,9 +34,12 @@ jobs:
           haxelib git haxelib "${U}${P}/haxelib.git"
           haxelib git hmm "${U}${P}/hmm.git"
           haxelib run hmm install
+          # Download prebuilt lime.ndll instead of compiling C++ from scratch
+          haxelib install lime --always
+          cp -r ~/haxelib/lime/*/ndll/Linux64/* .haxelib/lime/git/ndll/Linux64/
 
       - name: Build HTML5
-        run: haxelib run lime build html5 -DGITHUB_BUILD
+        run: haxelib run lime build html5 -DGITHUB_BUILD -final
 
       - name: Upload HTML5 build
         uses: actions/upload-artifact@v4
