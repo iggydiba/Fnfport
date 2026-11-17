@@ -1,6 +1,11 @@
-name: Build HTML5
+name: Build and Deploy HTML5
 on:
   workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
   build:
@@ -22,9 +27,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .haxelib
-          key: haxelib-${{ hashFiles('hmm.json') }}-v3
+          key: haxelib-${{ hashFiles('hmm.json') }}-v5
 
-      - name: Install dependencies and prebuilt Lime binary
+      - name: Install dependencies cleanly
         if: steps.cache-haxelib.outputs.cache-hit != 'true'
         run: |
           mkdir -p ~/haxelib
@@ -34,15 +39,28 @@ jobs:
           haxelib git haxelib "${U}${P}/haxelib.git"
           haxelib git hmm "${U}${P}/hmm.git"
           haxelib run hmm install
-          # Download prebuilt lime.ndll instead of compiling C++ from scratch
-          haxelib install lime --always
-          cp -r ~/haxelib/lime/*/ndll/Linux64/* .haxelib/lime/git/ndll/Linux64/
+          # Download prebuilt lime.ndll into a temp folder so it never touches .haxelib
+          mkdir -p /tmp/lime-bin
+          curl -sL "https://haxe.org" -o /tmp/lime.zip
+          unzip -q /tmp/lime.zip -d /tmp/lime-bin
+          mkdir -p .haxelib/lime/git/ndll/Linux64
+          cp -r /tmp/lime-bin/*/ndll/Linux64/* .haxelib/lime/git/ndll/Linux64/
 
       - name: Build HTML5
-        run: haxelib run lime build html5 -DGITHUB_BUILD -final
+        run: haxelib run lime build html5 -DGITHUB_BUILD
 
-      - name: Upload HTML5 build
-        uses: actions/upload-artifact@v4
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: fnf-html5
           path: export/release/html5/bin
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
