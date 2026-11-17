@@ -27,7 +27,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .haxelib
-          key: haxelib-${{ hashFiles('hmm.json') }}-v6
+          key: haxelib-${{ hashFiles('hmm.json') }}-v7
 
       - name: Install dependencies cleanly
         if: steps.cache-haxelib.outputs.cache-hit != 'true'
@@ -39,11 +39,10 @@ jobs:
           haxelib git haxelib "${U}${P}/haxelib.git"
           haxelib git hmm "${U}${P}/hmm.git"
           haxelib run hmm install
-          # Install official lime into an isolated temp haxelib folder and grab lime.ndll
-          mkdir -p /tmp/haxelib
-          HAXELIB_PATH=/tmp/haxelib haxelib install lime --always
+          # Install official lime and copy its prebuilt Linux64 lime.ndll into the git fork
+          haxelib install lime --always
           mkdir -p .haxelib/lime/git/ndll/Linux64
-          cp -r /tmp/haxelib/lime/*/ndll/Linux64/* .haxelib/lime/git/ndll/Linux64/
+          cp $(find ~/haxelib /tmp /opt -path "*/Linux64/lime.ndll" 2>/dev/null | head -n 1) .haxelib/lime/git/ndll/Linux64/
 
       - name: Build HTML5
         run: haxelib run lime build html5 -DGITHUB_BUILD
